@@ -1,0 +1,52 @@
+version: '3.7'
+
+services:
+
+  redis:
+    container_name: redis
+    image: "redis:alpine"
+    command: redis-server --save "" --appendonly "no"
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    tmpfs:
+      - /var/lib/redis
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+
+  searxng:
+    container_name: searxng
+    image: searxng/searxng:latest
+    ports:
+     - "8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+#      - ./searxng.png:/usr/local/searxng/searx/static/themes/simple/img/searxng.png  #Uncomment this line to add your custom logo on the page
+#      - ./favicon.png:/usr/local/searxng/searx/static/themes/simple/img/favicon.png  #Uncomment this line to add your own favicon
+    restart: unless-stopped
+    environment:
+      - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - LETSENCRYPT_HOST=${VIRTUAL_HOST}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+networks:
+  default:
+    external:
+      name: nginx-proxy
